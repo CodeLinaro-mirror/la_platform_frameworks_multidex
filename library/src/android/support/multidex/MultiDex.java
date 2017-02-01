@@ -155,21 +155,9 @@ public final class MultiDex {
                 }
 
                 File dexDir = getDexDir(context, applicationInfo);
-                List<File> files = MultiDexExtractor.load(context, applicationInfo, dexDir, false);
-                if (checkValidZipFiles(files)) {
-                    installSecondaryDexes(loader, dexDir, files);
-                } else {
-                    Log.w(TAG, "Files were not valid zip files.  Forcing a reload.");
-                    // Try again, but this time force a reload of the zip file.
-                    files = MultiDexExtractor.load(context, applicationInfo, dexDir, true);
-
-                    if (checkValidZipFiles(files)) {
-                        installSecondaryDexes(loader, dexDir, files);
-                    } else {
-                        // Second time didn't work, give up
-                        throw new RuntimeException("Zip files were not valid.");
-                    }
-                }
+                List<? extends File> files =
+                    MultiDexExtractor.load(context, applicationInfo, dexDir, false);
+                installSecondaryDexes(loader, dexDir, files);
             }
 
         } catch (Exception e) {
@@ -230,7 +218,8 @@ public final class MultiDex {
         return isMultidexCapable;
     }
 
-    private static void installSecondaryDexes(ClassLoader loader, File dexDir, List<File> files)
+    private static void installSecondaryDexes(ClassLoader loader, File dexDir,
+        List<? extends File> files)
             throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException,
             InvocationTargetException, NoSuchMethodException, IOException {
         if (!files.isEmpty()) {
@@ -242,19 +231,6 @@ public final class MultiDex {
                 V4.install(loader, files);
             }
         }
-    }
-
-    /**
-     * Returns whether all files in the list are valid zip files.  If {@code files} is empty, then
-     * returns true.
-     */
-    private static boolean checkValidZipFiles(List<File> files) {
-        for (File file : files) {
-            if (!MultiDexExtractor.verifyZipFile(file)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
@@ -400,7 +376,8 @@ public final class MultiDex {
      */
     private static final class V19 {
 
-        private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
+        private static void install(ClassLoader loader,
+                List<? extends File> additionalClassPathEntries,
                 File optimizedDirectory)
                         throws IllegalArgumentException, IllegalAccessException,
                         NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
@@ -465,7 +442,8 @@ public final class MultiDex {
      */
     private static final class V14 {
 
-        private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
+        private static void install(ClassLoader loader,
+                List<? extends File> additionalClassPathEntries,
                 File optimizedDirectory)
                         throws IllegalArgumentException, IllegalAccessException,
                         NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
@@ -499,7 +477,8 @@ public final class MultiDex {
      * Installer for platform versions 4 to 13.
      */
     private static final class V4 {
-        private static void install(ClassLoader loader, List<File> additionalClassPathEntries)
+        private static void install(ClassLoader loader,
+                List<? extends File> additionalClassPathEntries)
                         throws IllegalArgumentException, IllegalAccessException,
                         NoSuchFieldException, IOException {
             /* The patched class loader is expected to be a descendant of
@@ -516,7 +495,7 @@ public final class MultiDex {
             File[] extraFiles = new File[extraSize];
             ZipFile[] extraZips = new ZipFile[extraSize];
             DexFile[] extraDexs = new DexFile[extraSize];
-            for (ListIterator<File> iterator = additionalClassPathEntries.listIterator();
+            for (ListIterator<? extends File> iterator = additionalClassPathEntries.listIterator();
                     iterator.hasNext();) {
                 File additionalEntry = iterator.next();
                 String entryPath = additionalEntry.getAbsolutePath();
